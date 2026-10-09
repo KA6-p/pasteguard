@@ -1,0 +1,57 @@
+{
+  "name": "pasteguard",
+  "displayName": "PasteGuard",
+  "description": "Checks pasted Python code for hallucinated packages and risky patterns.",
+  "version": "0.0.1",
+  "publisher": "your-publisher-id",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Linters", "Other"],
+  "activationEvents": ["onLanguage:python"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "pasteguard.showLog", "title": "PasteGuard: Show Log" }
+    ],
+    "configuration": {
+      "title": "PasteGuard",
+      "properties": {
+        "pasteguard.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable paste detection and scanning."
+        },
+        "pasteguard.minChars": {
+          "type": "number",
+          "default": 40,
+          "description": "Ignore inserted text shorter than this many characters."
+        },
+        "pasteguard.minLines": {
+          "type": "number",
+          "default": 2,
+          "description": "Inserts with at least this many lines count as pastes."
+        },
+        "pasteguard.singleLineChars": {
+          "type": "number",
+          "default": 60,
+          "description": "A single-line insert at least this long also counts (e.g. a long install command)."
+        },
+        "pasteguard.maxChars": {
+          "type": "number",
+          "default": 200000,
+          "description": "Skip scanning pastes larger than this many characters."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "test": "npm run compile && node --test out/test/pasteDetector.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
