@@ -50,6 +50,11 @@
           "type": "number",
           "default": 200000,
           "description": "Skip scanning pastes larger than this many characters."
+        },
+        "pasteguard.packageChecks.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Look up pasted packages on PyPI (only package names are sent, never your code). Turn off to work fully offline."
         }
       }
     }
@@ -57,7 +62,8 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -watch -p .",
-    "test": "npm run compile && node --test out/test/pasteDetector.test.js out/test/installParser.test.js out/test/extractor.test.js"
+    "test": "npm run compile && node --test out/test/pasteDetector.test.js out/test/installParser.test.js out/test/extractor.test.js out/test/lookalike.test.js out/test/pypiClient.test.js out/test/packageIntel.test.js out/test/cache.test.js out/test/verdictLog.test.js",
+    "update-popular": "node scripts/updatePopular.js"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

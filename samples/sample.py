@@ -1,6 +1,5 @@
 import requests
 import flask_gpt_helper
+import utils
 
-def run(cmd):
-    import subprocess
-    return subprocess.run(cmd, shell=True)
+ip install reqeusts flask-gpt-helper

