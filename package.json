@@ -5,13 +5,23 @@
   "version": "0.0.1",
   "publisher": "your-publisher-id",
   "license": "MIT",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Linters", "Other"],
-  "activationEvents": ["onLanguage:python"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:python"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      { "command": "pasteguard.showLog", "title": "PasteGuard: Show Log" }
+      {
+        "command": "pasteguard.showLog",
+        "title": "PasteGuard: Show Log"
+      }
     ],
     "configuration": {
       "title": "PasteGuard",
@@ -47,11 +57,15 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -watch -p .",
-    "test": "npm run compile && node --test out/test/pasteDetector.test.js"
+    "test": "npm run compile && node --test out/test/pasteDetector.test.js out/test/installParser.test.js out/test/extractor.test.js"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "tree-sitter-wasms": "0.1.13",
+    "web-tree-sitter": "0.22.6"
   }
 }
